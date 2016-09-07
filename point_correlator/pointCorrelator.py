@@ -19,6 +19,7 @@ class PointCorrelator:
         self.screen.fill(BACKGROUND_COLOR)
         self.screen.blit(pygame.transform.scale(self.picture,(WIDTH, HEIGHT)),(0,0))
 
+        pygame.display.set_caption("PointCorrelator")
         pygame.display.flip()
 
     def events(self):
