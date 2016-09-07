@@ -13,9 +13,12 @@ class PointCorrelator:
     def __init__(self):
         pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), RESIZABLE)
+        self.picture = pygame.image.load("didi.jpg")
 
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)
+        self.screen.blit(pygame.transform.scale(self.picture,(WIDTH, HEIGHT)),(0,0))
+
         pygame.display.flip()
 
     def events(self):
