@@ -93,6 +93,6 @@ class CreatePoints(object):
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print ("Usage: %s filename.map filename.pts") % sys.argv[0]
+        print "Usage: %s filename.map filename.pts" % sys.argv[0]
     cm = CreatePoints(sys.argv[1], sys.argv[2])
     cm.mainLoop()

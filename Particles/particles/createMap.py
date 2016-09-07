@@ -81,6 +81,6 @@ class CreateMap(object):
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print ("Usage: %s filename.map") % sys.argv[0]
+        print "Usage: %s filename.map" % sys.argv[0]
     cm = CreateMap(sys.argv[1])
     cm.mainLoop()
