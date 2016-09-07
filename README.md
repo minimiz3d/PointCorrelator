@@ -1,2 +1,2 @@
 # PointCorrelator
-This project intends to provide a correlation between real points and image pixels.
+A tool to help making point correlations between real coordinates and image coordinates(pixels).
