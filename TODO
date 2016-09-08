@@ -1,6 +1,3 @@
-# PointCorrelator
-A tool to help making point correlations between real coordinates and image coordinates(pixels).
-
 ###### TODO ######
 
 1. Make possible to resize Points Surface scaling down what's drawn in it and without losing the original point coordinate
