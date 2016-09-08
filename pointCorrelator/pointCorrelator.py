@@ -19,22 +19,22 @@ class PointCorrelator(object):
 		self.points_list = list()
 
 		self.screen = pygame.display.set_mode((WIDTH, HEIGHT), RESIZABLE)	# set screen mode
-		self.loadPoints()							# loads file with point data
-		self.loadImage()							# loads image that the points will be connected to
+		self.loadPoints()						                        	# loads file with point data
+		self.loadImage()						                        	# loads image that the points will be connected to
 	
 	def loadPoints(self):
-		pts = open(self.pointsFile, 'r') 				# opens file with points read-only
-		for string in pts.readlines():					# reads file line by line, getting x and y information
+		pts = open(self.pointsFile, 'r') 			    	# opens file with points read-only
+		for string in pts.readlines():				    	# reads file line by line, getting x and y information
 			x, y = [int(x) for x in string.split(',')]		# evil string manipulation
-			self.points_list.append((x,y)) 				# appends new points to points list
-		pts.close()							# close file (good programming!)		
+			self.points_list.append((x,y)) 			    	# appends new points to points list
+		pts.close()				                			# close file (good programming!)		
 		
 		self.ptsSurface = pygame.Surface((max(self.points_list, key=itemgetter(0))[0], \
 						max(self.points_list, key=itemgetter(1))[1]))	# creates surface for drawing the points
-												# of the size max(x), max(y)
+                        												# of the size max(x), max(y)
 
 #		self.ptsSurface = pygame.transform.scale(self.ptsSurface, (300, 300)) 		# resize the surface (only resizes the actual
-												# surface, not what's drawn into it)
+                                    												# surface, not what's drawn into it)
 	def loadImage(self):
 		self.imgSurface = pygame.image.load(self.imageFile)
 
@@ -55,11 +55,11 @@ class PointCorrelator(object):
 		self.screen.fill(BACKGROUND_COLOR)
 		for point in self.points_list:
 			pygame.draw.circle(self.ptsSurface, POINT_COLOR, \
-						point, POINT_RADIUS)		# draw point by point points in self.points_list (confusing)	
-		self.screen.blit(self.ptsSurface, (0, 0)) 			# blits ptsSurface
-		offsetX = self.ptsSurface.get_rect()[2]				# gets X offset for drawing the image
+						point, POINT_RADIUS)	            	# draw point by point points in self.points_list (confusing)	
+		self.screen.blit(self.ptsSurface, (0, 0)) 		    	# blits ptsSurface
+		offsetX = self.ptsSurface.get_rect()[2]			    	# gets X offset for drawing the image
 		self.screen.blit(self.imgSurface, (offsetX, 0))			# blits imgSurface to the right of ptsSurface
-		pygame.display.flip() 						# actually shows shit on screen
+		pygame.display.flip() 					            	# actually shows shit on screen
 	
 	def mainLoop(self):
 		while self.events():
