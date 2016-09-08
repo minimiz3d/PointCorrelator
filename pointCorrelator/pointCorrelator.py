@@ -17,12 +17,18 @@ HIGHLIGHT_WIDTH = 2
 CLICK_PRECISION = 5
 
 class PointCorrelator(object):
-    def __init__(self, pointsFile, imageFile):
+    def __init__(self, pointsFile, imageFile, filename):
         pygame.init()               # initializes pygame modules
         self.pointsFile = pointsFile
         self.imageFile = imageFile
+        self.filename = filename
+
         self.points_list = list()
         self.highlighted_points = list()                                    # stores highlighted points
+        self.connectedPoints = list()                                       # stores connected points
+
+        self.lastHighlight = 0
+        self.firstclick = 0
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), RESIZABLE)   # set screen mode
         self.loadPoints()                                                   # loads file with point data
@@ -42,7 +48,7 @@ class PointCorrelator(object):
 #       self.ptsSurface = pygame.transform.scale(self.ptsSurface, (300, 300))       # resize the surface (only resizes the actual
                                                                                     # surface, not what's drawn in it)
         
-        self.highlightSurface = pygame.Surface(self.ptsSurface.get_size())          # creates new surface with same size as ptsSurface
+        self.highlightSurface = pygame.Surface(self.screen.get_size())          # creates new surface with same size as ptsSurface
                                                                                     # this will be used for highlighting points
         self.highlightSurface.set_colorkey((0, 0, 0))                               # set transparency color to black
 
@@ -52,6 +58,7 @@ class PointCorrelator(object):
     def resize(self, new_width, new_height):
         self.screen = pygame.display.set_mode((new_width, new_height), RESIZABLE)   # set new mode for the screen when the window 
                                                                                     # is resized
+        self.highlightSurface = pygame.transform.scale(self.highlightSurface, (new_width, new_height))
 
     # This method tests if a point clicked on the screen is in the points_list
     # loaded from the file. This ensures that only points present in the list
@@ -84,15 +91,35 @@ class PointCorrelator(object):
             print "Highlighting %s" % (point_to_highlight, )
             pygame.draw.circle(self.highlightSurface, HIGHLIGHT_COLOR, \
                                 point_to_highlight, HIGHLIGHT_RADIUS, HIGHLIGHT_WIDTH)
+            self.lastHighlight = point_to_highlight             # saves last highlighted point
     
+    def drawLine(self, finishingPoint):
+        print "Drawing line to %s" % (finishingPoint, )
+        pygame.draw.line(self.highlightSurface, HIGHLIGHT_COLOR, self.lastHighlight, finishingPoint, HIGHLIGHT_WIDTH)
+        self.connectedPoints.append(self.lastHighlight + finishingPoint)         # concatenates tupples and appends to list
+        print '"Real" Point %s, Image Pixel %s' % (self.lastHighlight, finishingPoint)
+
+    def save(self):
+        print "Writing to file..."
+        f = open(self.filename, 'w')
+        for point in self.connectedPoints:
+            xR = point[0]
+            yR = point[1]
+            xI = point[2] - self.offsetX     # subtracts offsetX so it saves the image correspondent pixel and not the screen
+            yI = point[3]
+            f.write('%d,%d,%d,%d\n' % (xR, yR, xI, yI))
+        f.close()
+
+        print "Done."
+        
     def draw(self):
         self.screen.fill(BACKGROUND_COLOR)
         for point in self.points_list:
             pygame.draw.circle(self.ptsSurface, POINT_COLOR, \
                         point, POINT_RADIUS)                    # draw point by point points in self.points_list (confusing)    
         self.screen.blit(self.ptsSurface, (0, 0))               # blits ptsSurface
-        offsetX = self.ptsSurface.get_rect()[2]                 # gets X offset for drawing the image
-        self.screen.blit(self.imgSurface, (offsetX, 0))         # blits imgSurface to the right of ptsSurface
+        self.offsetX = self.ptsSurface.get_rect()[2]            # gets X offset for drawing the image
+        self.screen.blit(self.imgSurface, (self.offsetX, 0))    # blits imgSurface to the right of ptsSurface
         self.screen.blit(self.highlightSurface, (0,0))          # blits highlightSurface on the screen
         pygame.display.flip()                                   # actually shows shit on screen
 
@@ -102,10 +129,19 @@ class PointCorrelator(object):
                 return False
             elif event.type == KEYUP:
                 if event.key == K_ESCAPE: return False
+                if event.key == K_RETURN: 
+                    self.save()
             elif event.type == VIDEORESIZE:
                 self.resize(event.w, event.h)
             elif event.type == MOUSEBUTTONUP:
-                self.highlightCircle(self.checkPoint(event.pos)) # this actually works
+                if self.firstclick == 0:
+                    point_to_highlight = self.checkPoint(event.pos)
+                    if point_to_highlight is not None:
+                        self.highlightCircle(point_to_highlight) # this actually works
+                        self.firstclick = 1
+                else:
+                    self.drawLine(event.pos)
+                    self.firstclick = 0
 
         return True
 
@@ -115,9 +151,9 @@ class PointCorrelator(object):
             self.draw()
     
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print "Usage: %s pointsFile.pts imageFile.img" % sys.argv[0]
+    if len(sys.argv) != 4:
+        print "Usage: %s pointsFile.pts imageFile.img fileToWrite" % sys.argv[0]
         sys.exit()
     
-    pc = PointCorrelator(sys.argv[1], sys.argv[2])
+    pc = PointCorrelator(sys.argv[1], sys.argv[2], sys.argv[3])
     pc.mainLoop()
