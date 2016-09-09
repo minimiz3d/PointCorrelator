@@ -28,6 +28,7 @@ class PointCorrelator(object):
         self.connectedPoints = list()                                       # stores connected points
 
         self.lastHighlight = 0
+        self.finishingPoint = 0
         self.firstclick = 0
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), RESIZABLE)   # set screen mode
@@ -73,23 +74,25 @@ class PointCorrelator(object):
         if is_in is True: return point        # returns point where the click happened
         else: return None
 
-    def highlightCircle(self, point_to_highlight, highlightColor, undoFlag):
-        if point_to_highlight is None:                          # checks if there's a point to highlight
-            return
-
+    def highlightCircle(self, point_to_highlight):
         already_highlighted = 0
 
-        if (undoFlag == 0):
-            for tup in self.highlighted_points:
-                if point_to_highlight == tup:
-                    already_highlighted = 1
-                    break
+        for tup in self.highlighted_points:
+            if point_to_highlight == tup:
+                already_highlighted = 1
+                break
 
         if(already_highlighted == 0):
             print "Highlighting %s" % (point_to_highlight, )
-            pygame.draw.circle(self.highlightSurface, highlightColor, \
+            pygame.draw.circle(self.highlightSurface, HIGHLIGHT_COLOR, \
                                 point_to_highlight, HIGHLIGHT_RADIUS, HIGHLIGHT_WIDTH)
             self.lastHighlight = point_to_highlight             # saves last highlighted point
+
+    # IN PROGRESS...
+    def removeLastHighlightCircle(self):
+        pygame.draw.circle(self.highlightSurface, (0,0,0), self.highlighted_points[-1], HIGHLIGHT_RADIUS, HIGHLIGHT_WIDTH)
+        self.highlighted_points.pop()
+        print "Last highlight circle removed.\tHighlighted pts: ", len(self.highlighted_points)
 
     def drawLine(self, finishingPoint):
         print "Drawing line to %s" % (finishingPoint, )
@@ -122,16 +125,25 @@ class PointCorrelator(object):
         pygame.display.flip()                                   # actually shows shit on screen
 
     # IN PROGRESS
+    def undrawLine(self, lineColor):
+        # endPoint = self.connectedPoints[-1][0:2]
+        print "Undrawing line between: %s and %s" % (self.highlighted_points[-1], self.finishingPoint)
+        pygame.draw.line(self.highlightSurface, lineColor, self.lastHighlight, self.finishingPoint, HIGHLIGHT_WIDTH)
+
+    # IN PROGRESS
     def undo(self):
-        if (len(self.highlighted_points) > 0):
-            # Change circle's color
-            self.highlightCircle(self.highlighted_points[-1], (0,0,0), 1)
-            self.highlighted_points.pop()
+        if (self.connectedPoints):
+            print "Last line removed.\tConnected pts: ", len(self.connectedPoints)
+            self.removeLastHighlightCircle()
+            print "Last line was: ", self.connectedPoints[-1]
+            self.undrawLine((0,0,0))
             self.connectedPoints.pop()
 
-            print "Last highlighted_point removed.\n#highlighted_points: ", len(self.highlighted_points)
-        else:
-            print "No highlighted_points to remove."
+        # else:
+        #     print "No connections to remove."
+        #
+        #     if (len(self.highlighted_points) > 0):
+        #         self.removeLastHighlightCircle()
 
     def events(self):
         for event in pygame.event.get():
@@ -151,13 +163,15 @@ class PointCorrelator(object):
                     point_to_highlight = self.checkPoint(event.pos)
 
                     if point_to_highlight is not None:
-                        self.highlightCircle(point_to_highlight, HIGHLIGHT_COLOR, 0) # this actually works
+                        self.highlightCircle(point_to_highlight) # this actually works
                         self.highlighted_points.append(point_to_highlight)      # adds point to the list of already highlighted points
                         self.firstclick = 1
-                    print len(self.highlighted_points) # Quantity of highlighted_points
+
                 else:
-                    self.drawLine(event.pos)
-                    self.firstclick = 0
+                    if (self.highlighted_points):
+                        self.finishingPoint = event.pos
+                        self.drawLine(self.finishingPoint)
+                        self.firstclick = 0
 
 
         return True
