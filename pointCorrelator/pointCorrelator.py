@@ -8,6 +8,7 @@ from pygame.locals import *
 
 # Constants
 BACKGROUND_COLOR = (250,250,250)
+BLACK = (0,0,0)
 WIDTH, HEIGHT = 640, 480
 POINT_COLOR = (0, 150, 0)
 HIGHLIGHT_COLOR = (150, 0, 0)
@@ -27,8 +28,10 @@ class PointCorrelator(object):
         self.highlighted_points = list()                                    # stores highlighted points
         self.connectedPoints = list()                                       # stores connected points
 
+        self.connectionExists = 0
         self.lastHighlight = 0
         self.finishingPoint = 0
+        self.point_to_highlight = 0
         self.firstclick = 0
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), RESIZABLE)   # set screen mode
@@ -74,31 +77,25 @@ class PointCorrelator(object):
         if is_in is True: return point        # returns point where the click happened
         else: return None
 
-    def highlightCircle(self, point_to_highlight):
+    def addCircle(self):
         already_highlighted = 0
 
         for tup in self.highlighted_points:
-            if point_to_highlight == tup:
+            if self.point_to_highlight == tup:
                 already_highlighted = 1
                 break
 
         if(already_highlighted == 0):
-            print "Highlighting %s" % (point_to_highlight, )
-            pygame.draw.circle(self.highlightSurface, HIGHLIGHT_COLOR, \
-                                point_to_highlight, HIGHLIGHT_RADIUS, HIGHLIGHT_WIDTH)
-            self.lastHighlight = point_to_highlight             # saves last highlighted point
-
-    # IN PROGRESS...
-    def removeLastHighlightCircle(self):
-        pygame.draw.circle(self.highlightSurface, (0,0,0), self.highlighted_points[-1], HIGHLIGHT_RADIUS, HIGHLIGHT_WIDTH)
-        self.highlighted_points.pop()
-        print "Last highlight circle removed.\tHighlighted pts: ", len(self.highlighted_points)
-
-    def drawLine(self, finishingPoint):
-        print "Drawing line to %s" % (finishingPoint, )
-        pygame.draw.line(self.highlightSurface, HIGHLIGHT_COLOR, self.lastHighlight, finishingPoint, HIGHLIGHT_WIDTH)
-        self.connectedPoints.append(self.lastHighlight + finishingPoint)         # concatenates tupples and appends to list
-        print '"Real" Point %s, Image Pixel %s' % (self.lastHighlight, finishingPoint)
+            print "Highlighting %s" % (self.point_to_highlight, )
+            self.lastHighlight = self.point_to_highlight                              # saves last highlighted point
+            self.finishingPoint = self.lastHighlight
+            self.highlighted_points.append(self.point_to_highlight)
+            self.connectionExists = 0
+    def addLine(self):
+        print "Drawing line to %s" % (self.finishingPoint, )
+        self.connectedPoints.append(self.lastHighlight + self.finishingPoint)         # concatenates tupples and appends to list
+        self.connectionExists = 1
+        print '"Real" Point %s, Image Pixel %s' % (self.lastHighlight, self.finishingPoint)
 
     def save(self):
         print "Writing to file..."
@@ -113,37 +110,51 @@ class PointCorrelator(object):
 
         print "Done."
 
-    def draw(self):
-        self.screen.fill(BACKGROUND_COLOR)
+    def updatePts(self):
         for point in self.points_list:
-            pygame.draw.circle(self.ptsSurface, POINT_COLOR, \
-                        point, POINT_RADIUS)                    # draw point by point points in self.points_list (confusing)
+            pygame.draw.circle(self.ptsSurface, POINT_COLOR, point, POINT_RADIUS)
+    def updateHighlightedPts(self):
+        for highlight in self.highlighted_points:
+            pygame.draw.circle(self.highlightSurface, HIGHLIGHT_COLOR, highlight, HIGHLIGHT_RADIUS, HIGHLIGHT_WIDTH)
+    def updateLines(self):
+        for lines in self.connectedPoints:
+            pygame.draw.line(self.highlightSurface, HIGHLIGHT_COLOR, self.lastHighlight, self.finishingPoint, HIGHLIGHT_WIDTH)
+    def updateScreen(self):
+        self.screen.fill(BACKGROUND_COLOR)
+        self.updatePts()
+        self.updateHighlightedPts()
+        self.updateLines()
+
         self.screen.blit(self.ptsSurface, (0, 0))               # blits ptsSurface
         self.offsetX = self.ptsSurface.get_rect()[2]            # gets X offset for drawing the image
         self.screen.blit(self.imgSurface, (self.offsetX, 0))    # blits imgSurface to the right of ptsSurface
         self.screen.blit(self.highlightSurface, (0,0))          # blits highlightSurface on the screen
-        pygame.display.flip()                                   # actually shows shit on screen
 
-    # IN PROGRESS
-    def undrawLine(self, lineColor):
-        # endPoint = self.connectedPoints[-1][0:2]
-        print "Undrawing line between: %s and %s" % (self.highlighted_points[-1], self.finishingPoint)
-        pygame.draw.line(self.highlightSurface, lineColor, self.lastHighlight, self.finishingPoint, HIGHLIGHT_WIDTH)
+        pygame.display.flip()
 
-    # IN PROGRESS
     def undo(self):
-        if (self.connectedPoints):
-            print "Last line removed.\tConnected pts: ", len(self.connectedPoints)
-            self.removeLastHighlightCircle()
+        if (self.connectionExists == 1 or len(self.connectedPoints) > 0):
             print "Last line was: ", self.connectedPoints[-1]
-            self.undrawLine((0,0,0))
-            self.connectedPoints.pop()
 
-        # else:
-        #     print "No connections to remove."
-        #
-        #     if (len(self.highlighted_points) > 0):
-        #         self.removeLastHighlightCircle()
+            # AQUI.
+            pygame.draw.line(self.highlightSurface, BLACK, self.lastHighlight, self.finishingPoint, HIGHLIGHT_WIDTH)
+            pygame.draw.circle(self.highlightSurface, BLACK, self.lastHighlight, HIGHLIGHT_RADIUS, HIGHLIGHT_WIDTH)
+
+            # The last tuple (line) and last highlighted point was removed from the list.
+            del self.connectedPoints[-1]
+            del self.highlighted_points[-1]
+
+            # The connection between 2 pts (the last line) was removed.
+            self.connectionExists = 0
+
+            # Updates the base and final points to undraw the lines.
+            if (len(self.connectedPoints) > 0):
+                self.lastHighlight = self.connectedPoints[-1][0:2]
+                self.finishingPoint = self.connectedPoints[-1][2:4]
+
+            print "Number of connections: ", len(self.connectedPoints)
+        else:
+            print "Nothing to remove."
 
     def events(self):
         for event in pygame.event.get():
@@ -155,30 +166,37 @@ class PointCorrelator(object):
                     self.save()
                 if event.key == K_z and pygame.key.get_mods() & KMOD_CTRL: # ctrl + z
                     self.undo() # Remove the last highlighted_point from 'highlighted_points' list
-
             elif event.type == VIDEORESIZE:
                 self.resize(event.w, event.h)
             elif event.type == MOUSEBUTTONUP:
                 if self.firstclick == 0:
-                    point_to_highlight = self.checkPoint(event.pos)
+                    self.point_to_highlight = self.checkPoint(event.pos)
 
-                    if point_to_highlight is not None:
-                        self.highlightCircle(point_to_highlight) # this actually works
-                        self.highlighted_points.append(point_to_highlight)      # adds point to the list of already highlighted points
+                    if self.point_to_highlight is not None:
+                        self.addCircle()
                         self.firstclick = 1
 
-                else:
+                else: # LINE
                     if (self.highlighted_points):
-                        self.finishingPoint = event.pos
-                        self.drawLine(self.finishingPoint)
+                        if (self.connectionExists == 0):
+                            self.finishingPoint = event.pos
+                            self.addLine()
+
                         self.firstclick = 0
 
+                # DEBUGGING:
+                if (len(self.connectedPoints) > 0):
+                    print "\n===\tConnected pts:"
+                    for i, connected in enumerate(self.connectedPoints):
+                        print "connectedPoints[%d]: %s", i, connected
+                        print "lastHighlight: ", self.lastHighlight
+                        print "finishingPoint: ", self.finishingPoint
 
         return True
 
     def mainLoop(self):
         while self.events():
-            self.draw()
+            self.updateScreen()
 
 if __name__ == '__main__':
     if len(sys.argv) != 4:
