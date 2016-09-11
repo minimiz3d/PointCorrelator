@@ -136,7 +136,6 @@ class PointCorrelator(object):
         if (self.connectionExists == 1 or len(self.connectedPoints) > 0):
             print "Last line was: ", self.connectedPoints[-1]
 
-            # AQUI.
             pygame.draw.line(self.highlightSurface, BLACK, self.lastHighlight, self.finishingPoint, HIGHLIGHT_WIDTH)
             pygame.draw.circle(self.highlightSurface, BLACK, self.lastHighlight, HIGHLIGHT_RADIUS, HIGHLIGHT_WIDTH)
 
