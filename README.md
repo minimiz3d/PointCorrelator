@@ -9,7 +9,7 @@ A tool to help making point correlations between real coordinates and image coor
 
 3. Generate a text file from 2. **DONE**
 
-4. Remove points already highlighted/connected. **IN PROGRESS**
+4. Remove points already highlighted/connected. **DONE**
 
 5. Make more user-friendly.
 
