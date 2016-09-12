@@ -4,6 +4,7 @@ import pygame
 import operator
 from operator import itemgetter
 from pygame.locals import *
+import point2 as p2
 
 # Constants
 BACKGROUND_COLOR = (250,250,250)
@@ -40,7 +41,7 @@ class PointCorrelator(object):
     def loadPoints(self):
         pts = open(self.pointsFile, 'r')                    # opens file with points read-only
         for string in pts.readlines():                      # reads file line by line, getting x and y information
-            x, y = [int(x) for x in string.split(',')]      # evil string manipulation
+            x, y = [int(int(x) * 0.5) for x in string.split(',')]      # evil string manipulation
             self.points_list.append((x,y))                  # appends new points to points list
         pts.close()                                         # close file (good programming!)
 
@@ -66,14 +67,14 @@ class PointCorrelator(object):
     # can be selected
     def checkPoint(self, point_clicked):
         print point_clicked
+        point_clicked = p2.Point2(point_clicked)
         is_in = False
         for point in self.points_list:
-            if point_clicked[0] < point[0] + CLICK_PRECISION and point_clicked[1] < point[1]\
-            + CLICK_PRECISION and point_clicked[0] > point[0] - CLICK_PRECISION \
-            and point_clicked[1] > point[1] - CLICK_PRECISION:                      # yeah, this is pretty fucking ugly
-                is_in = True
-                break
-        if is_in is True: return point        # returns point where the click happened
+        	point = p2.Point2(point)
+        	if (point_clicked - point).r <= CLICK_PRECISION: 			# THANKS FABRICIO
+        		is_in = True
+        		break
+        if is_in is True: return point.rect()        # returns point where the click happened
         else: return None
 
     def addCircle(self):
@@ -100,8 +101,8 @@ class PointCorrelator(object):
         print "Writing to file..."
         f = open(self.filename, 'w')
         for point in self.connectedPoints:
-            xR = point[0]
-            yR = point[1]
+            xR = point[0] * 2
+            yR = point[1] * 2
             xI = point[2] - self.offsetX     # subtracts offsetX so it saves the image correspondent pixel and not the screen
             yI = point[3]
             f.write('%d,%d,%d,%d\n' % (xR, yR, xI, yI))
